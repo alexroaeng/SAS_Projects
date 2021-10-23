@@ -139,22 +139,6 @@ run;
 		 /*just the 0.085% from credit score are outliar just leave unthosh*/
 		
 		
-
-		
-   	  
-   	  
-   	  
-   	  
-   	  
-   	  
-   
-   
-	
-	
-	
-	
-	
-	
     
                                       
 /*Find out which IV are good for the model. Do we need more IV. Can we enrich the model. */  
@@ -207,15 +191,14 @@ Bar chart for every var. X axis is the DV and Y axis is the avg of the IV.    */
 %mBivariateCont(EstimatedSalary);
 
 
-/*  1 avg credit score doesnt see relevant againts exited	
+/* firts insights from  the Bivariate analisys 
+
+	1 avg credit score doesnt see relevant againts exited	
 	2 avg age look like there is important impact it the group of 30 years old trend stays more thatn the 40 year group 
 	3 avg tenure denote no diference are 0.1 between the exited status or no (5.1 and 4.9)
 	4 avg estimated salary sees too close with just a diference of $1727 beeeing just  the 1.7% respect the total  */
 
 
-/* Creation of all derived variables.
-Marks will be awarded basis how innovatively you can think of cretaing new derived variables
-You can even now , explore new data sources to add new vars to your model. If possible. */
 
 /*Creation of all derived variables
 Age Group
@@ -397,7 +380,8 @@ set ch.ds1;
 
 run;
 
-/*up to here the dataset is full with all variables and dummy variables the data  set  is the ds1*/	
+/*up to here the dataset is full with all variables and dummy variables the data  set  is the ds1 and has to be create in order to run the multicollinearity test*/	
+/*macro for bicariate analisys over non continuos  variables  */	
 
 
 %macro mBivariateCateg(var);
@@ -430,9 +414,6 @@ run;
 %mBivariateCateg(Gender);
 %mBivariateCateg(Geography);
 
-/*  Multi-collinearity test.
-Here I will need to see the result of each iteration, sorted in the order of VIF score.
-Figure out yourself how to get the sorted VIF result*/
 
 /* 
 list  of all variables
@@ -462,8 +443,6 @@ Balance_dummy_4
 
 derivate  variables :
 CreditScoreGroup AgeGroup  antiquity	 level
-
-
 
  */
 
@@ -516,8 +495,10 @@ var Exited CreditScore Age  EstimatedSalary
  Balance_dummy_3  ;
 title 'Correlation Matrix';
 run;
+
+
 /*
-the one with more correlation respect exited 
+the one with more correlation respect   exited are :
 Age
 EstimatedSalary
 Balance_dummy_3
@@ -533,10 +514,9 @@ proc means data=ch.ds1 chartype nmiss vardef=df;
 	class Geography Gender IsActiveMember Exited NumOfProducts HasCrCard Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2 Geography_dummy_g_3;
 run;
 
+
+
 /*validation Splitting the data into Training and Validation (80:20);*/
-
-
-
 
 
 proc sql;
@@ -548,5 +528,320 @@ from ch.ds1;
 quit;
 
 
-*7. Splitting the data into Macro Training and Validation (80:20);
+*7. Macro for iterate with different variables  the data will split in  Training and test (80:20);
+
+
+%macro runModel  (Trainperc,seed,version,var);
+
+data ch.exited_Train_&version ch.exited_Test_&version;
+set ch.ds2;
+	if ranuni(&seed) le &Trainperc then output ch.exited_Train_&version;
+	else output ch.exited_Test_&version;
+run;
+proc logistic data=ch.ds2  descending outest=betas covout outmodel=mg1;
+ model exited =   &var 
+              / selection=stepwise
+                slentry=0.01
+                slstay=0.005
+                details
+                lackfit;
+ output out=Pred_ds2 p=phat lower=lcl upper=ucl
+        predprobs=(individual);
+run;	
+/*10. Confusion matrix */
+proc freq data=Pred_ds2;
+table _FROM_*_INTO_ / out=ConfusionMatrix nocol norow;
+run;
+%mend
+
+
+
+%runmodel(0.75 ,123,96,) 9.06*/
+
+%runmodel(0.75 ,10000,34) 7.29*/ 
+
+
+/*testing the model whi differente  variables  */
+
+%runmodel(0.80 ,123,12, age EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3) /* 7.29 this number will represent the total match values respect the original train*/
+
+
+%runmodel(0.80 ,123,11) no age  no results
+
+
+%runmodel(0.80 ,123,10,CreditScore Age  
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3) /* 7.29*/
+				/*	 */
+
+
+
+%runmodel(0.80 ,123,9,CreditScore Age  EstimatedSalary
+    			    Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3 ) /* 6.32*/
+				/**/
+
+
+%runmodel(0.80 ,123,8,CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1   Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3)/* 5.97*/
+				
+				 /*  */
+
+
+%runmodel(0.80 ,123,7,CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 
+     			  IsActiveMember_dummy_2 Balance_dummy_3)/*6.15*/
+/**/
+
+%runmodel(0.80 ,123,6,CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			   Balance_dummy_3) /*5.39*/
+				/*	 */
+
+
+%runmodel(0.80 ,123,5,CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 ); /*7.06*/
+				  */
+
+%runmodel(0.80 ,123,14,CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3); /*7.29 */ the version will be the 
+				 /*  */
+
+
+
+/*it shows this is the best combination of variables just getting 7.29% of accuracy with this model*/
+/*Now i will get the best posible training and test split  nex macro will do the job */
+
+
+/*performance table and  lifter*/
+
+/*macro for test the model 14 with different splits*/
+
+
+%macro runModel3  (version,obstrain,obstest);
+
+
+*8. List of variables to be used in Logistic Regression;
+
+%Let Varlist1 = 	
+	CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3 
+;
+			
+
+proc logistic data=ch.exited_Train_$version  descending outest=betas covout outmodel=mg1;
+ model exited= &VarList1
+              / selection=stepwise
+                slentry=0.01
+                slstay=0.005
+                details
+                lackfit;
+ output out=Pred_exited_Train_&version p=phat lower=lcl upper=ucl
+        predprobs=(individual);
+        
+        
+run;	
+
+proc sort data = Pred_exited_Train_&version; by descending phat;
+run;
+
+
+%Let NoOfRecords = &obstrain;
+%Let NoOfBins = 10;
+data Pred_exited_Train_v2;
+set Pred_exited_Train_&version;
+retain Cumulative_Count;
+	Count = 1;
+	Cumulative_Count = sum(Cumulative_Count, Count);
+	Bin = round(Cumulative_Count/(&NoOfRecords/&NoOfBins) - 0.5) + 1;
+	if Bin GT &NoOfBins then Bin = &NoOfBins;
+run;
+
+
+
+proc sql;
+create table Gains_v1 as
+select Bin as CustomerGroup, count(*) as CountOfCustomers, sum(exited) as CountOfDefaulters
+from Pred_exited_Train_v2
+group by Bin;
+quit;
+
+proc sql;
+select count(1) into :TrainingDefaulterCount
+from Pred_exited_Train_v2
+where exited=1;
+quit;
+
+data Gains_v1;
+set Gains_v1;
+ModelPercOfDefaulters = CountOfDefaulters*100/&TrainingDefaulterCount;
+RandomPercOfDefaulters = 100/&NoOfBins;
+retain ModelCummPercOfDefaulters RandomCummPercOfDefaulters;
+ModelCummPercOfDefaulters = sum(ModelCummPercOfDefaulters,ModelPercOfDefaulters);
+RandomCummPercOfDefaulters = sum(RandomCummPercOfDefaulters,RandomPercOfDefaulters);
+KS = ModelCummPercOfDefaulters-RandomCummPercOfDefaulters;
+run;
+
+proc sql;
+  insert into Gains_v1
+     set  CountOfCustomers=0,  CountOfDefaulters = 0,  CustomerGroup=0,
+     		 KS=0,  ModelCummPercOfDefaulters=0, ModelPercOfDefaulters=0,
+     		  RandomCummPercOfDefaulters=0, RandomPercOfDefaulters=0;
+quit;
+*Sort the records by predicted probabilities in descending order;
+proc sort data = Gains_v1; by CustomerGroup;
+run;
+
+PROC sgplot DATA=Gains_v1;
+   series x=CustomerGroup y=ModelCummPercOfDefaulters;
+   series x=CustomerGroup y=RandomCummPercOfDefaulters;
+run;
+
+/* test*/
+
+proc logistic inmodel=mg1;
+ score data = ch.exited_Test_&version out=Pred_exited_Test_&version ;
+run;
+
+proc sort data = Pred_exited_Test_&version; by descending p_1;
+run;
+
+
+%Let NoOfRecords = &obstest;
+%Let NoOfBins = 10;
+data Pred_exited_Test_v2;
+set Pred_exited_Test_&version;
+retain Cumulative_Count;
+	Count = 1;
+	Cumulative_Count = sum(Cumulative_Count, Count);
+	Bin = round(Cumulative_Count/(&NoOfRecords/&NoOfBins) - 0.5) + 1;
+	if Bin GT &NoOfBins then Bin = &NoOfBins;
+run;
+
+proc sql;
+create table Gains_v2 as
+select Bin as CustomerGroup, count(*) as CountOfCustomers, sum(exited) as CountOfDefaulters,
+max(p_1) as MaxPredProb from Pred_exited_Test_v2
+group by Bin;
+quit;
+
+proc sql;
+select count(1) into :TestingDefaulterCount
+from Pred_exited_Test_v2
+where exited=1;
+quit;
+
+data Gains_v2;
+set Gains_v2;
+ModelPercOfDefaulters = CountOfDefaulters*100/&TestingDefaulterCount;
+RandomPercOfDefaulters = 100/&NoOfBins;
+retain ModelCummPercOfDefaulters RandomCummPercOfDefaulters;
+ModelCummPercOfDefaulters = sum(ModelCummPercOfDefaulters,ModelPercOfDefaulters);
+RandomCummPercOfDefaulters = sum(RandomCummPercOfDefaulters,RandomPercOfDefaulters);
+KS = ModelCummPercOfDefaulters-RandomCummPercOfDefaulters;
+run;
+
+
+proc sql;
+  insert into Gains_v2
+     set  CountOfCustomers=0,  CountOfDefaulters = 0,  CustomerGroup=0,
+     		 KS=0,  MaxPredProb=0, ModelCummPercOfDefaulters=0, ModelPercOfDefaulters=0,
+     		  RandomCummPercOfDefaulters=0, RandomPercOfDefaulters=0;
+quit; 
+
+proc sql;
+create table Gains_v3 as
+select a.*, b.ModelCummPercOfDefaulters  as TestModelCummPercOfDefaulters
+from Gains_v1 a, Gains_v2 b
+where a.CustomerGroup= b.CustomerGroup;
+quit;
+
+
+
+PROC sgplot DATA=Gains_v3;
+   series x=CustomerGroup y=ModelCummPercOfDefaulters;
+   series x=CustomerGroup y=TestModelCummPercOfDefaulters;
+   series x=CustomerGroup y=RandomCummPercOfDefaulters;
+run;
+
+%mend ;
+
+
+
+/* chossig the model with the variables on version 14 
+the macro keep those variables as we see before has most quantity of acertivities  */
+
+%runmodel(0.80 ,123,14); /*7.29 */
+
+
+/*time to tested with same variables differents percentile*/
+
+/*
+%macro runModel  (Trainperc,seed,version); you chosse the name of the version */
+
+		%runmodel(0.70 ,123,34,CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3; /*70 */
+
+		%runmodel(0.75 ,123,24,CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3; /*75 */
+
+
+		%runmodel(0.80 ,123,44,CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3; /*80 */
+
+		%runmodel(0.85 ,123,54,CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3; /*85 */
+
+		%runmodel(0.90 ,123,64,CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3; /*90 */
+
+		%runmodel(0.95 ,123,74,CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3; /*95 */
+
+
+/* 11. Lift Chart on training data 
+*Generating Gains Curve and Calculating Gini Coeff & KS on Training records;*/
+
+/* %macro runModel3  (version,obstrain,obstest);*/
+
+		%runmodel3(44,8063,1937); /*80 */
+		
+		%runmodel3(34,7069,2931); /*70 */
+
+		%runmodel3(24,7587,2413); /*75 */
+		
+		%runmodel3(54,8564,1436); /*85 */
+		
+		
+
+/* getting table*/
+
+proc sql;
+create table Gains_v3 as
+select a.*, b.ModelCummPercOfDefaulters  as TestModelCummPercOfDefaulters
+from Gains_v1 a, Gains_v2 b
+where a.CustomerGroup= b.CustomerGroup;
+quit;
+
+
+
+/*performance*/
+%runmodel2(34); 
+
+
+
+
+
 
