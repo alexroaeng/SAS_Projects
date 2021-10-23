@@ -33,13 +33,11 @@ run;
 getting thew histograms
 */
 /*
-
 proc means data=CHURN.ds chartype mean median std min max n vardef=df;
 	var RowNumber CustomerId CreditScore Age Tenure Balance NumOfProducts
 		HasCrCard IsActiveMember EstimatedSalary Exited;
 	output out=CHURN.MEANS_STATS mean=std=min=max=n= / autoname;
 run;
-
 proc univariate data=CHURN.ds vardef=df noprint;
 	var RowNumber CustomerId CreditScore Age Tenure Balance NumOfProducts
 		HasCrCard IsActiveMember EstimatedSalary Exited;
@@ -47,21 +45,16 @@ proc univariate data=CHURN.ds vardef=df noprint;
 		HasCrCard IsActiveMember EstimatedSalary Exited;
 	inset mean median std min max n / position=nw;
 run;
-
-
 /*
 getting the missing values
 */
 
 /*
-
 proc means data=CH.ds1 chartype nmiss vardef=df;
 	var  CreditScore Age Tenure Balance NumOfProducts
 		HasCrCard IsActiveMember EstimatedSalary Exited;
 	class Geography Gender;
 run;
-
-
 /*
 boxplot
 */
@@ -70,31 +63,22 @@ proc sgplot data=CHURN.ds;
 	hbox Age / fillattrs=(color=CXCAD5E5);
 	xaxis grid;
 run;
-
 proc sgplot data=CHURN.ds;
 	hbox Balance / fillattrs=(color=CXCAD5E5);
 	xaxis grid;
 run;
-
-
 proc sgplot data=CHURN.ds;
 	hbox Tenure / fillattrs=(color=CXCAD5E5);
 	xaxis grid;
 run;
-
 proc sgplot data=CHURN.ds;
 	hbox NumOfProducts / fillattrs=(color=CXCAD5E5);
 	xaxis grid;
 run;
-
-
-
 proc sgplot data=CHURN.ds;
 	hbox CreditScore / fillattrs=(color=CXCAD5E5);
 	xaxis grid;
 run;
-
-
    /* 3. Find percentile values on losses to treat for outliers  take care of age */
    /*outliers of age are replace for median of age is 37 we dont wan to lose this information  */
   proc univariate data=ch.ds1 ;
@@ -192,7 +176,6 @@ Bar chart for every var. X axis is the DV and Y axis is the avg of the IV.    */
 
 
 /* firts insights from  the Bivariate analisys 
-
 	1 avg credit score doesnt see relevant againts exited	
 	2 avg age look like there is important impact it the group of 30 years old trend stays more thatn the 40 year group 
 	3 avg tenure denote no diference are 0.1 between the exited status or no (5.1 and 4.9)
@@ -208,9 +191,7 @@ https://www.statcan.gc.ca/eng/concepts/definitions/age2
 15-24 Youth
 25-65 Adult
 >65 Seniors*
-
 Credit Score
-
 Classification credit score
 https://www.experian.com/blogs/ask-experian/credit-education/score-basics/what-is-a-good-credit-score/
 300-579 Poor
@@ -218,13 +199,11 @@ https://www.experian.com/blogs/ask-experian/credit-education/score-basics/what-i
 670-739 Good
 740-799 Very Good
 800-850 Exceptional
-
 antiquity->
 Tenure
 0-3 New
 3-6 Mid
 >7 Senior
-
 Level
 Balance
 0-49999 clasicc
@@ -418,32 +397,22 @@ run;
 /* 
 list  of all variables
 /* 
-
 objetive variable : exited
-
 continuos variables original: 
 CreditScore Age Tenure Balance EstimatedSalary
-
 dummy original:
     Gender_Acc_dummy_xy_1 HasCrCard_dummy_2 Geography_dummy_f_1 Geography_dummy_s_2
     Geography_dummy_g_3 NumOfProducts_Acc_dummy_1 NumOfProducts_Acc_dummy_2
     NumOfProducts_Acc_dummy_3 NumOfProducts_Acc_dummy_4 IsActiveMember_dummy_2
-
 dummy derivate :
-
 Age_Group_dummy_1 Age_Group_dummy_2 Age_Group_dummy_3 Age_Group_dummy_4 
 Credit_Score_dummy_1 Credit_Score_dummy_2 Credit_Score_dummy_3 Credit_Score_dummy_4
 Credit_Score_dummy_5
-
 Tenure_dummy_1 Tenure_dummy_2 Tenure_dummy_3
-
 Balance_dummy_1 Balance_dummy_2 Balance_dummy_3 
 Balance_dummy_4
-
-
 derivate  variables :
 CreditScoreGroup AgeGroup  antiquity	 level
-
  */
 
 
@@ -558,14 +527,17 @@ run;
 
 %runmodel(0.75 ,123,96,) 9.06*/
 
-%runmodel(0.75 ,10000,34) 7.29*/ 
+%runmodel(0.75 ,10000,34,CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3) ;7.29*/ 
 
 
 /*testing the model whi differente  variables  */
 
 %runmodel(0.80 ,123,12, age EstimatedSalary
     			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
-     			  IsActiveMember_dummy_2 Balance_dummy_3) /* 7.29 this number will represent the total match values respect the original train*/
+     			  IsActiveMember_dummy_2 Balance_dummy_3)
+     /* 7.29 this number will represent the total match values respect the original train*/
 
 
 %runmodel(0.80 ,123,11) no age  no results
@@ -605,12 +577,14 @@ run;
 %runmodel(0.80 ,123,5,CreditScore Age  EstimatedSalary
     			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
      			  IsActiveMember_dummy_2 ); /*7.06*/
-				  */
 
 %runmodel(0.80 ,123,14,CreditScore Age  EstimatedSalary
     			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
      			  IsActiveMember_dummy_2 Balance_dummy_3); /*7.29 */ the version will be the 
-				 /*  */
+
+%runmodel(0.70 ,123,15,CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3);
 
 
 
@@ -625,18 +599,22 @@ run;
 
 %macro runModel3  (version,obstrain,obstest);
 
-
-*8. List of variables to be used in Logistic Regression;
-
 %Let Varlist1 = 	
 	CreditScore Age  EstimatedSalary
     			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
-     			  IsActiveMember_dummy_2 Balance_dummy_3 
-;
+     			  IsActiveMember_dummy_2 Balance_dummy_3 ;
+
+
+
+*8. List of variables to be used in Logistic Regression;
+
+
 			
 
-proc logistic data=ch.exited_Train_$version  descending outest=betas covout outmodel=mg1;
- model exited= &VarList1
+proc logistic data=ch.exited_Train_&version  descending outest=betas covout outmodel=mg1;
+ model exited= CreditScore Age  EstimatedSalary
+    			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
+     			  IsActiveMember_dummy_2 Balance_dummy_3
               / selection=stepwise
                 slentry=0.01
                 slstay=0.005
@@ -787,7 +765,7 @@ the macro keep those variables as we see before has most quantity of acertivitie
 
 		%runmodel(0.70 ,123,34,CreditScore Age  EstimatedSalary
     			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
-     			  IsActiveMember_dummy_2 Balance_dummy_3; /*70 */
+     			  IsActiveMember_dummy_2 Balance_dummy_3); /*70 */
 
 		%runmodel(0.75 ,123,24,CreditScore Age  EstimatedSalary
     			  Gender_Acc_dummy_xy_1  Geography_dummy_f_1 Geography_dummy_s_2
@@ -816,6 +794,10 @@ the macro keep those variables as we see before has most quantity of acertivitie
 
 /* %macro runModel3  (version,obstrain,obstest);*/
 
+%runmodel3(14,8063,1937);
+
+%runmodel3(15,7069,2931);
+
 		%runmodel3(44,8063,1937); /*80 */
 		
 		%runmodel3(34,7069,2931); /*70 */
@@ -839,9 +821,3 @@ quit;
 
 /*performance*/
 %runmodel2(34); 
-
-
-
-
-
-
